@@ -180,9 +180,26 @@ function Login() {
               </Link>
             </Grid>
           </Grid> */}
+        {/* I want to add a demo section with user and admin demo login buttons, and login with the values i give you */}
+        <Typography variant="body1" sx={{ mb: 2, mt: 4 }}>Demo Login:</Typography>
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <Button type="submit" variant="contained" color="primary" onClick={() => {
+            formik.setValues({ username: "trevnoah", password: "1234asdf" });
+            // formik.handleSubmit();
+          }}>
+            User Demo Login
+          </Button>
+          <Button type="submit" variant="contained" color="primary" onClick={() => {
+            formik.setValues({ username: "admin", password: "12345678" });
+            // formik.handleSubmit();
+          }}>
+            Admin Demo Login
+          </Button>
+        </Box>
           </Box>
         </Box>
         <Copyright sx={{ mt: 8, mb: 4 }} />
+
         <Snackbar
           open={openSnackbar}
           autoHideDuration={6000}
