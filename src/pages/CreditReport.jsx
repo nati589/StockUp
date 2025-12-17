@@ -12,8 +12,9 @@ import {
 import { styled } from "@mui/system";
 import MUIDataTable from "mui-datatables";
 import { useEffect, useState } from "react";
-import { db } from "../config/firebase";
-import { getDocs, collection, updateDoc, doc } from "firebase/firestore";
+// import { db } from "../config/firebase";
+// import { getDocs, collection, updateDoc, doc } from "firebase/firestore";
+import api from "../lib/api";
 
 const StyledMUIDataTable = styled(MUIDataTable)(({ theme }) => ({
   background: theme.palette.background.default,
@@ -71,7 +72,7 @@ const columns = [
 ];
 
 function CreditReport() {
-  const creditRef = collection(db, "sales");
+  // const creditRef = collection(db, "sales");
   const [credit, setCredit] = useState([]);
   const [creditList, setCreditList] = useState([]);
   const [productList, setProductList] = useState([]);
@@ -126,10 +127,10 @@ function CreditReport() {
 
   const getDetails = async () => {
     try {
-      const creditData = await getDocs(creditRef);
-      const filteredCredits = creditData.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
+      const creditData = await api.get("/sales");
+      const filteredCredits = creditData.data.map((credit) => ({
+        ...credit,
+        id: credit._id,
       }));
       setCreditList(filteredCredits.filter((credit) => credit.credit === true));
       setCredit(
@@ -153,11 +154,11 @@ function CreditReport() {
             ];
           })
       );
-      const productRef = collection(db, "products");
-      const productData = await getDocs(productRef);
-      const filteredProducts = productData.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
+      const productRef = api.get("/products");
+      const productData = await productRef;
+      const filteredProducts = productData.data.map((product) => ({
+        ...product,
+        id: product._id,
       }));
       setProductList(filteredProducts);
     } catch (error) {

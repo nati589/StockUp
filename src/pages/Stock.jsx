@@ -11,15 +11,16 @@ import {
 import { styled } from "@mui/system";
 import MUIDataTable from "mui-datatables";
 import { useEffect, useState } from "react";
-import { db } from "../config/firebase";
-import {
-  getDocs,
-  collection,
-  addDoc,
-  updateDoc,
-  doc,
-  writeBatch,
-} from "firebase/firestore";
+// import { db } from "../config/firebase";
+// import {
+//   getDocs,
+//   collection,
+//   addDoc,
+//   updateDoc,
+//   doc,
+//   writeBatch,
+// } from "firebase/firestore";
+import api from "../lib/api";
 
 const StyledMUIDataTable = styled(MUIDataTable)(({ theme }) => ({
   background: theme.palette.background.default,
@@ -36,7 +37,7 @@ function Stock() {
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [modalData, setModalData] = useState();
   const [price, setPrice] = useState(0);
-  const productsRef = collection(db, "products");
+  const productsRef = api.get("/products");
   const [productList, setProductList] = useState([]);
 
   const handleClose = async (data, reason) => {
@@ -44,11 +45,11 @@ function Stock() {
       console.log(reason);
     } else {
       try {
-        const productDoc = doc(db, "products", data.id);
-        await updateDoc(productDoc, { price_bought: price }).then(() =>
-          setOpenSnackbar(true)
-        );
-        getDetails();
+        const productDoc = api.put(`/products/${data.id}`, { price_bought: price });
+        await productDoc.then(() => {
+          setOpenSnackbar(true);
+          getDetails();
+        });
       } catch (error) {
         console.error(error);
       }
@@ -167,10 +168,10 @@ function Stock() {
   ];
   const getDetails = async () => {
     try {
-      const productData = await getDocs(productsRef);
-      const filteredProducts = productData.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
+      const productData = await productsRef;
+      const filteredProducts = productData.data.map((product) => ({
+        ...product,
+        id: product._id,
       }));
       setProductList(
         filteredProducts.map((product) => {

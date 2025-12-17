@@ -18,8 +18,9 @@ import {
 import { useState, useEffect } from "react";
 import { Grid } from "@mui/material";
 import MUIDataTable from "mui-datatables";
-import { db } from "../config/firebase";
-import { getDocs, collection, updateDoc, doc } from "firebase/firestore";
+// import { db } from "../config/firebase";
+// import { getDocs, collection, updateDoc, doc } from "firebase/firestore";
+import api from "../lib/api";
 
 function Credit() {
   const [open, setOpen] = useState(false);
@@ -28,7 +29,7 @@ function Credit() {
   const [credit, setCredit] = useState([]);
   const [creditList, setCreditList] = useState([]);
   const [productList, setProductList] = useState([]);
-  const creditRef = collection(db, "sales");
+  // const creditRef = collection(db, "sales");
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
   // console.log(creditList)
@@ -39,8 +40,8 @@ function Credit() {
       if (covered || unpaid === 0) {
         console.log(unpaid);
         try {
-          const creditDoc = doc(db, "sales", data.id);
-          await updateDoc(creditDoc, {
+          // const creditDoc = doc(db, "sales", data.id);
+          await api.put(`/sales/${data.id}`, {
             creditinfo: {
               payment_covered: true,
               unpaid: unpaid,
@@ -54,8 +55,8 @@ function Credit() {
         }
       } else {
         try {
-          const creditDoc = doc(db, "sales", data.id);
-          await updateDoc(creditDoc, {
+          // const creditDoc = doc(db, "sales", data.id);
+          await api.put(`/sales/${data.id}`, {
             creditinfo: {
               payment_covered: false,
               unpaid: unpaid,
@@ -222,10 +223,10 @@ function Credit() {
   };
   const getDetails = async () => {
     try {
-      const creditData = await getDocs(creditRef);
-      const filteredCredits = creditData.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
+      const creditData = await api.get("/sales");
+      const filteredCredits = creditData.data.map((credit) => ({
+        ...credit,
+        id: credit._id,
       }));
       setCredit(
         filteredCredits.filter(
@@ -268,11 +269,11 @@ function Credit() {
           })
       );
       // console.log(typeof filteredCredits[0]?.creditinfo?.payment_covered);
-      const productRef = collection(db, "products");
-      const productData = await getDocs(productRef);
-      const filteredProducts = productData.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
+      const productRef = api.get("/products");
+      const productData = await productRef;
+      const filteredProducts = productData.data.map((product) => ({
+        ...product,
+        id: product._id,
       }));
       setProductList(filteredProducts);
     } catch (error) {

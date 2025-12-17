@@ -7,8 +7,9 @@ import { Box } from "@mui/system";
 import React, { useEffect, useState } from "react";
 import Categories from "../components/Categories";
 import Products from "../components/Products";
-import { db } from "../config/firebase";
-import { getDocs, collection } from "firebase/firestore";
+import api from "../lib/api";
+// import { db } from "../config/firebase";
+// import { getDocs, collection } from "firebase/firestore";
 import SaleDetails from "../components/SaleDetails";
 
 const Search = styled("div")(({ theme }) => ({
@@ -53,8 +54,8 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 }));
 
 function Sales() {
-  const productsRef = collection(db, "products");
-  const categoryRef = collection(db, "categories");
+  // const productsRef = collection(db, "products");
+  // const categoryRef = collection(db, "categories");
   const [products, setProducts] = useState([]);
   const [sortedProducts, setSortedProducts] = useState([]);
   const [searchData, setSearchData] = useState("");
@@ -63,28 +64,20 @@ function Sales() {
 
   const getProducts = async () => {
     try {
-      const productData = await getDocs(productsRef);
-      const filteredProducts = productData.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
-      }));
-      setProducts(filteredProducts);
-      setSortedProducts(filteredProducts);
+      const { data } = await api.get("/products");
+      const normalized = data.map(p => ({ ...p, id: p._id })); // ensure id exists
+      setProducts(normalized);
+      setSortedProducts(normalized);
     } catch (error) {
-      console.error("hi");
       setOpenSnackbar(true);
     }
   };
   const getCategories = async () => {
     try {
-      const categoryData = await getDocs(categoryRef);
-      const filteredCategories = categoryData.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
-      }));
-      setCategories(filteredCategories);
+      const { data } = await api.get("/categories");
+      setCategories(data);
     } catch (error) {
-      console.error("hi");
+      console.error(error);
     }
   };
   useEffect(() => {

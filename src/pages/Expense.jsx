@@ -13,14 +13,15 @@ import {
 } from "@mui/material";
 import { Box } from "@mui/system";
 import React, { useState } from "react";
-import { db } from "../config/firebase";
-import { collection, addDoc } from "firebase/firestore";
+// import { db } from "../config/firebase";
+// import { collection, addDoc } from "firebase/firestore";
+import api from "../lib/api";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 
 function Expense() {
   const [openSnackbar, setOpenSnackbar] = useState(false);
-  const expenseRef = collection(db, "expenses");
+  const expenseRef = api.get("/expenses");
 
   const formik = useFormik({
     initialValues: {
@@ -50,7 +51,7 @@ function Expense() {
     }/${date.getDate()}/${date.getFullYear()}`;
 
     try {
-      await addDoc(expenseRef, {
+      await api.post("/expenses", {
         type: values.type,
         date_added: myDate,
         price: values.price,

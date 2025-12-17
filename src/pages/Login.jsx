@@ -15,16 +15,17 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { db } from "../config/firebase";
-import {
-  getDocs,
-  collection,
-  addDoc,
-  updateDoc,
-  doc,
-  writeBatch,
-} from "firebase/firestore";
+// import { db } from "../config/firebase";
+// import {
+//   getDocs,
+//   collection,
+//   addDoc,
+//   updateDoc,
+//   doc,
+//   writeBatch,
+// } from "firebase/firestore";
 import { Alert, Snackbar } from "@mui/material";
+import api from "../lib/api";
 
 function Copyright(props) {
   return (
@@ -44,12 +45,12 @@ function Copyright(props) {
 }
 
 function Login() {
-  const usersRef = collection(db, "users");
+  // const usersRef = collection(db, "users");
   const navigate = useNavigate();
   const [loggedIn, setLoggedIn] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
-  const users = async () => {};
+  // const users = async () => {};
   const formik = useFormik({
     initialValues: {
       username: "",
@@ -63,35 +64,18 @@ function Login() {
     }),
     onSubmit: async (values) => {
       try {
-        const userData = await getDocs(usersRef);
-        const userList = userData.docs.map((doc) => ({
-          ...doc.data(),
-          id: doc.id,
-        }));
-
-        let currentUser = userList?.find(
-          (user) => user?.username === values?.username
-        );
-        if (
-          currentUser?.password === values?.password &&
-          currentUser?.admin === true
-        ) {
-          localStorage.setItem("loggedInUser", true);
-          localStorage.setItem("loggedInStatus", true);
-          setLoggedIn(true);
-        } else if (
-          currentUser?.password === values?.password &&
-          currentUser?.admin === false
-        ) {
-          localStorage.setItem("loggedInUser", true);
-          localStorage.setItem("loggedInStatus", false);
-          localStorage.setItem("fullName", currentUser?.fullname);
-          setLoggedIn(true);
-        } else {
-          setOpenSnackbar(true);
-        }
-      } catch (error) {
-        console.error(error);
+        const { data } = await api.post("/auth/login", {
+          username: values.username,
+          password: values.password
+        });
+        // data: { token, user: { id, username, fullname, admin } }
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("loggedInUser", "true");
+        localStorage.setItem("loggedInStatus", String(!!data.user.admin)); // "true" for admin, "false" for salesperson
+        if (data.user.fullname) localStorage.setItem("fullName", data.user.fullname);
+        setLoggedIn(true);
+      } catch {
+        setOpenSnackbar(true);
       }
     },
   });
@@ -180,9 +164,26 @@ function Login() {
               </Link>
             </Grid>
           </Grid> */}
+        {/* I want to add a demo section with user and admin demo login buttons, and login with the values i give you */}
+        <Typography variant="body1" sx={{ mb: 2, mt: 4 }}>Demo Login:</Typography>
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <Button type="submit" variant="contained" color="primary" onClick={() => {
+            formik.setValues({ username: "salesperson", password: "123456" });
+            // formik.handleSubmit();
+          }}>
+            Salesperson Demo Login
+          </Button>
+          <Button type="submit" variant="contained" color="primary" onClick={() => {
+            formik.setValues({ username: "admin", password: "123456" });
+            // formik.handleSubmit();
+          }}>
+            Admin Demo Login
+          </Button>
+        </Box>
           </Box>
         </Box>
         <Copyright sx={{ mt: 8, mb: 4 }} />
+
         <Snackbar
           open={openSnackbar}
           autoHideDuration={6000}
