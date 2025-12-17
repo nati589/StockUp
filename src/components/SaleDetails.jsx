@@ -28,15 +28,9 @@ import React, { useEffect, useState } from "react";
 import CartItem from "./CartItem";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { db } from "../config/firebase";
-import {
-  getDocs,
-  collection,
-  addDoc,
-  updateDoc,
-  doc,
-  writeBatch,
-} from "firebase/firestore";
+// import { db } from "../config/firebase";
+// import { getDocs, collection, addDoc, updateDoc, doc, writeBatch } from "firebase/firestore";
+import api from "../lib/api";
 
 function SaleDetails({
   cart,
@@ -74,44 +68,26 @@ function SaleDetails({
     onSubmit: (values, { resetForm }) => {
       console.log(subtotal);
       const submitSale = async () => {
-        const batch = writeBatch(db);
-        for (let i = 0; i < subtotal.length; i++) {
-          const productDoc = doc(db, "products", subtotal[i].id);
-          batch.update(productDoc, {
-            quantity:
-              Number(subtotal[i].previousQuantity) -
-              Number(subtotal[i].quantity),
-          });
-        }
-        let date = new Date();
-        let myDate = `${
+        const date = new Date();
+        const myDate = `${
           date.getMonth() + 1
         }/${date.getDate()}/${date.getFullYear()}`;
-        let [year, month, day] = values.creditDueDate.split("-");
-        const saleDoc = collection(db, "sales");
-        try {
-          await addDoc(saleDoc, {
-            credit,
-            items: subtotal.filter((item) => {
-              return item.quantity != 0 && item.price != 0;
-            }),
-            total: subtotalvalue,
-            seller: values.seller,
-            creditinfo: {
-              name: values.creditorName,
-              duedate: `${month}/${day}/${year}`,
-              unpaid: subtotalvalue,
-              payment_covered: false,
-            },
-            date_sold: myDate,
-          });
-          await batch.commit().then(() => {
-            handleSnackbarOpen(true);
-          });
-          refreshProducts();
-        } catch (error) {
-          console.error(error);
-        }
+        const [y, m, d] = values.creditDueDate.split("-");
+        await api.post("/sales", {
+          credit: true,
+          items: subtotal.filter((i) => i.quantity && i.price),
+          total: subtotalvalue,
+          seller: values.seller,
+          creditinfo: {
+            name: values.creditorName,
+            duedate: `${m}/${d}/${y}`,
+            unpaid: subtotalvalue,
+            payment_covered: false,
+          },
+          date_sold: myDate,
+        });
+        handleSnackbarOpen(true);
+        refreshProducts();
       };
       submitSale();
       removeCart();
@@ -133,36 +109,20 @@ function SaleDetails({
     onSubmit: (values, { resetForm }) => {
       console.log(subtotal);
       const submitSale = async () => {
-        const batch = writeBatch(db);
-        for (let i = 0; i < subtotal.length; i++) {
-          const productDoc = doc(db, "products", subtotal[i].id);
-          batch.update(productDoc, {
-            quantity:
-              Number(subtotal[i].previousQuantity) -
-              Number(subtotal[i].quantity),
-          });
-        }
-        let date = new Date();
-        let myDate = `${
+        const date = new Date();
+        const myDate = `${
           date.getMonth() + 1
         }/${date.getDate()}/${date.getFullYear()}`;
-        try {
-          await batch.commit();
-          const saleDoc = collection(db, "sales");
-          await addDoc(saleDoc, {
-            credit,
-            items: subtotal.filter((item) => {
-              return item.quantity != 0 && item.price != 0;
-            }),
-            total: subtotalvalue,
-            seller: values.seller,
-            buyer: values.buyer,
-            date_sold: myDate,
-          }).then(() => handleSnackbarOpen(true));
-          refreshProducts();
-        } catch (error) {
-          console.error(error);
-        }
+        await api.post("/sales", {
+          credit: false,
+          items: subtotal.filter((i) => i.quantity && i.price),
+          total: subtotalvalue,
+          seller: values.seller,
+          buyer: values.buyer,
+          date_sold: myDate,
+        });
+        handleSnackbarOpen(true);
+        refreshProducts();
       };
       submitSale();
       removeCart();
@@ -230,7 +190,8 @@ function SaleDetails({
       <Box
         component="form"
         onSubmit={credit ? formik.handleSubmit : formik2.handleSubmit}
-        noValidate>
+        noValidate
+      >
         <FormControl fullWidth sx={{ mb: 2 }} size="small">
           <InputLabel id="sellerid">Salesperson Name</InputLabel>
           <Select
@@ -245,7 +206,8 @@ function SaleDetails({
                 ? Boolean(formik.errors.seller) && formik.touched.seller
                 : Boolean(formik2.errors.seller) && formik2.touched.seller
             }
-            sx={{ height: 1 }}>
+            sx={{ height: 1 }}
+          >
             <MenuItem value={formik.values.seller}>
               {formik.values.seller}
             </MenuItem>
@@ -291,7 +253,8 @@ function SaleDetails({
             <RadioGroup
               aria-labelledby="payment"
               defaultValue="cash"
-              name="radio-buttons-group">
+              name="radio-buttons-group"
+            >
               <Box sx={{ display: "flex" }}>
                 <FormControlLabel
                   value="cash"
@@ -381,7 +344,8 @@ function SaleDetails({
               flexDirection: "column",
               justifyContent: "center",
               pt: 1,
-            }}>
+            }}
+          >
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
               <Typography>Subtotal: </Typography>
               <Typography>{subtotalvalue?.toFixed(2)}</Typography>
@@ -405,7 +369,8 @@ function SaleDetails({
               display: "flex",
               justifyContent: "space-between",
               width: "100%",
-            }}>
+            }}
+          >
             <Button
               type="reset"
               variant="outlined"
@@ -417,7 +382,8 @@ function SaleDetails({
                 formik.resetForm();
               }}
               fullWidth
-              sx={{ mr: 2 }}>
+              sx={{ mr: 2 }}
+            >
               Cancel
             </Button>
             <Button
@@ -425,7 +391,8 @@ function SaleDetails({
               onClick={() => setOpen(true)}
               variant="contained"
               disabled={cart.length === 0}
-              fullWidth>
+              fullWidth
+            >
               Done
             </Button>
           </Box>
@@ -436,7 +403,8 @@ function SaleDetails({
           onBackdropClick={handleBackdropClick}
           disableEscapeKeyDown
           aria-labelledby="modal-modal-title"
-          aria-describedby="modal-modal-description">
+          aria-describedby="modal-modal-description"
+        >
           <Box sx={style}>
             <Typography id="modal-modal-title" variant="h6" component="h2">
               Sale Information
@@ -490,7 +458,8 @@ function SaleDetails({
             <Typography
               id="modal-modal-description"
               color="primary"
-              sx={{ mt: 2 }}>
+              sx={{ mt: 2 }}
+            >
               Total: {subtotalvalue}
             </Typography>
             <Button
@@ -500,7 +469,8 @@ function SaleDetails({
               }}
               variant="outlined"
               // disabled={paid > modalData?.unpaid || isNaN(paid)}
-              sx={{ mr: 2, mt: 2 }}>
+              sx={{ mr: 2, mt: 2 }}
+            >
               Cancel
             </Button>
             <Button
@@ -512,7 +482,8 @@ function SaleDetails({
               }}
               variant="contained"
               // disabled={paid > modalData?.unpaid || isNaN(paid)}
-              sx={{ mr: 2, mt: 2 }}>
+              sx={{ mr: 2, mt: 2 }}
+            >
               Sell
             </Button>
           </Box>

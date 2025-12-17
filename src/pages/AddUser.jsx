@@ -9,13 +9,14 @@ import {
 } from "@mui/material";
 import { Box } from "@mui/system";
 import { useState } from "react";
-import { db } from "../config/firebase";
-import { collection, addDoc } from "firebase/firestore";
+// import { db } from "../config/firebase";
+// import { collection, addDoc } from "firebase/firestore";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import api from "../lib/api";
 
 export default function AddUser() {
-  const usersRef = collection(db, "users");
+  const usersRef = api.get("/users");
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
   const formik = useFormik({
@@ -38,13 +39,15 @@ export default function AddUser() {
   });
   const addNewUser = async (values) => {
     try {
-      await addDoc(usersRef, {
+      await api.post("/users", {
         admin: false,
         disable: false,
         fullname: values.fullName,
         username: values.username,
         password: values.password,
-      }).then(() => setOpenSnackbar(true));
+      }).then(() => {
+        setOpenSnackbar(true);
+      });
     } catch (error) {
       console.error(error);
     }

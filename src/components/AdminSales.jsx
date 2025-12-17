@@ -19,8 +19,9 @@ import { Grid, Typography } from "@mui/material";
 import { styled } from "@mui/system";
 import MUIDataTable from "mui-datatables";
 import { useEffect, useState } from "react";
-import { db } from "../config/firebase";
-import { getDocs, collection } from "firebase/firestore";
+// import { db } from "../config/firebase";
+// import { getDocs, collection } from "firebase/firestore";
+import api from "../lib/api";
 
 const StyledMUIDataTable = styled(MUIDataTable)(({ theme }) => ({
   background: theme.palette.background.default,
@@ -57,10 +58,10 @@ const columns = [
 ];
 
 function AdminSales() {
-  const salesRef = collection(db, "sales");
+  const salesRef = api.get("/sales");
   const [salesList, setSalesList] = useState([]);
   const [tableData, setTableData] = useState([]);
-  const productRef = collection(db, "products");
+  const productRef = api.get("/products");
   const [productList, setProductList] = useState([]);
   const [filter, setFilter] = useState("Today");
 
@@ -119,10 +120,10 @@ function AdminSales() {
 
   const getDetails = async () => {
     try {
-      const salesData = await getDocs(salesRef);
-      const filteredSales = salesData.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
+      const salesData = await salesRef;
+      const filteredSales = salesData.data.map((sale) => ({
+        ...sale,
+        id: sale._id,
       }));
       setSalesList(
         filteredSales.filter(
@@ -156,10 +157,10 @@ function AdminSales() {
             );
           })
       );
-      const productData = await getDocs(productRef);
-      const filteredProducts = productData.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
+      const productData = await productRef;
+      const filteredProducts = productData.data.map((product) => ({
+        ...product,
+        id: product._id,
       }));
       setProductList(filteredProducts);
     } catch (error) {

@@ -2,8 +2,9 @@ import { Grid, Typography } from "@mui/material";
 import { styled } from "@mui/system";
 import MUIDataTable from "mui-datatables";
 import { useEffect, useState } from "react";
-import { db } from "../config/firebase";
-import { getDocs, collection, updateDoc, doc } from "firebase/firestore";
+// import { db } from "../config/firebase";
+// import { getDocs, collection, updateDoc, doc } from "firebase/firestore";
+import api from "../lib/api";
 
 const StyledMUIDataTable = styled(MUIDataTable)(({ theme }) => ({
   background: theme.palette.background.default,
@@ -58,14 +59,14 @@ const options = {
 
 function ExpenseReport() {
   const [expenseList, setExpenseList] = useState([]);
-  const expenseRef = collection(db, "expenses");
+  const expenseRef = api.get("/expenses");
 
   const getDetails = async () => {
     try {
-      const expenseData = await getDocs(expenseRef);
-      const filteredExpenses = expenseData.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
+      const expenseData = await expenseRef;
+      const filteredExpenses = expenseData.data.map((expense) => ({
+        ...expense,
+        id: expense._id,
       }));
       setExpenseList(
         filteredExpenses.map((expense) => {

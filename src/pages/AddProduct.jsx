@@ -14,15 +14,16 @@ import {
 // import AddIcon from '@mui/icons-material/Add';
 import { Box } from "@mui/system";
 import { useEffect, useState } from "react";
-import { db } from "../config/firebase";
-import {
-  getDocs,
-  collection,
-  addDoc,
-  updateDoc,
-  doc,
-  writeBatch,
-} from "firebase/firestore";
+import api from "../lib/api";
+// import { db } from "../config/firebase";
+// import {
+//   getDocs,
+//   collection,
+//   addDoc,
+//   updateDoc,
+//   doc,
+//   writeBatch,
+// } from "firebase/firestore";
 
 function AddProduct() {
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -38,27 +39,16 @@ function AddProduct() {
   const [categoryList, setCategoryList] = useState([]);
   const [newProduct, setNewProduct] = useState(false);
   const [newCategory, setNewCategory] = useState(false);
-  const productsRef = collection(db, "products");
-  const categoryRef = collection(db, "categories");
+  // const productsRef = collection(db, "products");
+  // const categoryRef = collection(db, "categories");
 
   const getDetails = async () => {
-    try {
-      const productData = await getDocs(productsRef);
-      const filteredProducts = productData.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
-      }));
-      setProductList(filteredProducts);
-
-      const categoryData = await getDocs(categoryRef);
-      const filteredCategories = categoryData.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
-      }));
-      setCategoryList(filteredCategories);
-    } catch (error) {
-      console.error(error);
-    }
+    const [products, categories] = await Promise.all([
+      api.get("/products"),
+      api.get("/categories"),
+    ]);
+    setProductList(products.data);
+    setCategoryList(categories.data);
   };
   useEffect(() => {
     getDetails();
@@ -66,48 +56,40 @@ function AddProduct() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const date = new Date();
+    const myDate = `${
+      date.getMonth() + 1
+    }/${date.getDate()}/${date.getFullYear()}`;
+
     if (!newProduct) {
-      try {
-        let date = new Date();
-        let myDate = `${
-          date.getMonth() + 1
-        }/${date.getDate()}/${date.getFullYear()}`;
-        let productId = productList.find((item) => item.name === product);
-        const productDoc = doc(db, "products", productId.id);
-        console.log(quantity, productId.quantity);
-        await updateDoc(productDoc, {
-          quantity: Number(quantity) + Number(productId.quantity),
-          date_added: myDate,
-          added_by: addedBy,
-          restock: restock == "" ? productId?.restock : Number(restock)
-        }).then(() => setOpenSnackbar(true));
-        getDetails();
-      } catch (error) {
-        console.error(error);
-      }
+      const productId = productList.find((p) => p.name === product)._id;
+      await api.put(`/products/${productId}`, {
+        quantity:
+          Number(quantity) +
+          Number(productList.find((p) => p._id === productId).quantity),
+        date_added: myDate,
+        added_by: addedBy,
+        restock:
+          restock === ""
+            ? productList.find((p) => p._id === productId)?.restock
+            : Number(restock),
+      });
     } else {
-      let date = new Date();
-      let myDate = `${
-        date.getMonth() + 1
-      }/${date.getDate()}/${date.getFullYear()}`;
-      try {
-        await addDoc(productsRef, {
-          name: product,
-          category,
-          price_bought: Number(priceBought),
-          date_added: myDate,
-          added_by: addedBy,
-          quantity: Number(quantity),
-          unit,
-          restock: Number(restock),
-        }).then(() => setOpenSnackbar(true));
-        if (categoryList.find((item) => item.name === category) === undefined) {
-          await addDoc(categoryRef, { name: category });
-        }
-      } catch (err) {
-        console.error(err);
+      await api.post("/products", {
+        name: product,
+        category,
+        price_bought: String(0),
+        date_added: myDate,
+        added_by: addedBy,
+        quantity: Number(quantity),
+        unit,
+        restock: Number(restock),
+      });
+      if (!categoryList.find((c) => c.name === category)) {
+        await api.post("/categories", { name: category });
       }
     }
+    setOpenSnackbar(true);
     setCategory("");
     setProduct("");
     setUnit("");
@@ -131,7 +113,8 @@ function AddProduct() {
                     id="productid"
                     label="Product"
                     value={product}
-                    onChange={(event) => setProduct(event.target.value)}>
+                    onChange={(event) => setProduct(event.target.value)}
+                  >
                     {productList.map((item, index) => (
                       <MenuItem value={item.name} key={index}>
                         {item.name}
@@ -155,7 +138,8 @@ function AddProduct() {
                 onClick={() => {
                   setNewProduct(!newProduct);
                   setProduct("");
-                }}>
+                }}
+              >
                 {newProduct ? "Cancel" : "Add"}
                 {/* <AddIcon /> */}
               </Button>
@@ -198,7 +182,8 @@ function AddProduct() {
                       value={category}
                       onChange={(event) => {
                         setCategory(event.target.value);
-                      }}>
+                      }}
+                    >
                       {categoryList.map((item, index) => (
                         <MenuItem value={item.name} key={index}>
                           {item.name}
@@ -232,24 +217,22 @@ function AddProduct() {
                   id="addedby"
                   label="AddedBy"
                   value={addedBy}
-                  >
-                    <MenuItem value={addedBy}>
-                      {addedBy}
-                    </MenuItem>
+                >
+                  <MenuItem value={addedBy}>{addedBy}</MenuItem>
                 </Select>
               </FormControl>
             )}
             <TextField
-                margin="normal"
-                fullWidth
-                type="number"
-                id="restock"
-                label="Restock Limit"
-                sx={{ mr: 2 }}
-                value={restock}
-                onChange={(event) => setRestock(event.target.value)}
-                name="restock"
-              />
+              margin="normal"
+              fullWidth
+              type="number"
+              id="restock"
+              label="Restock Limit"
+              sx={{ mr: 2 }}
+              value={restock}
+              onChange={(event) => setRestock(event.target.value)}
+              name="restock"
+            />
             <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
               <Button variant="contained" type="submit">
                 Save
@@ -261,11 +244,13 @@ function AddProduct() {
       <Snackbar
         open={openSnackbar}
         autoHideDuration={6000}
-        onClose={() => setOpenSnackbar(false)}>
+        onClose={() => setOpenSnackbar(false)}
+      >
         <Alert
           severity="success"
           onClose={() => setOpenSnackbar(false)}
-          sx={{ width: "100%" }}>
+          sx={{ width: "100%" }}
+        >
           Product added successfully
         </Alert>
       </Snackbar>
